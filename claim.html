@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Claim Item — FOUND_{% endblock %}
+{% block content %}
+  <div class="form-card">
+    <span class="type-badge" style="background: {{ 'rgba(255,92,92,0.15)' if report.report_type == 'lost' else 'rgba(74,222,128,0.15)' }}; color: {{ 'var(--red)' if report.report_type == 'lost' else 'var(--green)' }};">
+      {{ report.report_type }} item
+    </span>
+    <h2>Claim: {{ report.item_name }}</h2>
+    <p style="color:var(--text-dim); font-size:0.85rem;">{{ report.description }}</p>
+    <p style="color:var(--yellow); font-size:0.85rem;">🚌 {{ report.bus_stop_name }}{% if report.spot %} — {{ report.spot }}{% endif %}</p>
+
+    <form method="post">
+      {% if report.report_type == 'found' and report.verification_question %}
+        <div class="field">
+          <label>Verification question</label>
+          <p style="font-size:0.9rem; margin:0;">{{ report.verification_question }}</p>
+        </div>
+        <div class="field">
+          <label for="answer">Your answer *</label>
+          <input type="text" id="answer" name="answer" placeholder="Answer the question above to verify you're the owner" required>
+          <span class="hint">If correct, the reporter's contact info is shared with you immediately</span>
+        </div>
+      {% else %}
+        <div class="field">
+          <label for="answer">Why do you believe this is yours? *</label>
+          <textarea id="answer" name="answer" placeholder="Describe identifying details so the finder/loser can verify it's really yours" required></textarea>
+          <span class="hint">The reporter will review your claim manually</span>
+        </div>
+      {% endif %}
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn-yellow">Submit Claim</button>
+        <a href="{{ url_for('track_status') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

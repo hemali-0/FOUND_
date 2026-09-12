@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Track Status — FOUND_{% endblock %}
+{% block content %}
+  <h2 style="margin-bottom:4px;">Track Status</h2>
+  <p style="color:var(--text-dim); font-size:0.85rem; margin-top:0;">Browse all open reports and submit a claim if one matches.</p>
+
+  <div class="controls">
+    <form method="get" action="{{ url_for('track_status') }}">
+      <input type="text" name="q" placeholder="Search item, bus stop, description..." value="{{ search }}">
+      {% if filter_type in ('lost', 'found') %}
+        <input type="hidden" name="type" value="{{ filter_type }}">
+      {% endif %}
+      <button class="btn btn-ghost" type="submit">Search</button>
+    </form>
+    <div class="filter-pills">
+      <a href="{{ url_for('track_status', q=search) }}" class="pill {{ 'active-all' if filter_type == 'all' }}">All</a>
+      <a href="{{ url_for('track_status', type='lost', q=search) }}" class="pill {{ 'active-lost' if filter_type == 'lost' }}">Lost</a>
+      <a href="{{ url_for('track_status', type='found', q=search) }}" class="pill {{ 'active-found' if filter_type == 'found' }}">Found</a>
+    </div>
+  </div>
+
+  {% if reports %}
+    <div class="board-grid">
+      {% for r in reports %}
+        <div class="card">
+          <span class="tag tag-{{ r.report_type }}">{{ r.report_type }}</span>
+          <span class="status-badge status-{{ r.status }}" style="float:right;">{{ r.status.replace('_', ' ') }}</span>
+          <h3>{{ r.item_name }}</h3>
+          <p class="desc">{{ r.description }}</p>
+          <div class="meta">
+            <span class="stop">🚌 {{ r.bus_stop_name }}{% if r.spot %} — {{ r.spot }}{% endif %}</span>
+            <span>Posted by {{ r.reporter.username }} · {{ r.date_reported.strftime('%d %b %Y, %I:%M %p') }}</span>
+          </div>
+          {% if r.reporter_id != current_user.id %}
+            <div class="resolve-form">
+              <a href="{{ url_for('claim', report_id=r.id) }}" class="btn btn-ghost" style="padding:8px 14px; font-size:0.75rem;">This might be mine — Claim</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <span class="pin-big">📌</span>
+      <p>No open reports match your search.</p>
+    </div>
+  {% endif %}
+{% endblock %}

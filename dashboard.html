@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FOUND_{% endblock %}
+{% block content %}
+  <h2 style="margin-bottom:4px;">Dashboard</h2>
+  <p style="color:var(--text-dim); font-size:0.85rem; margin-top:0;">What do you want to do?</p>
+
+  <div class="module-grid">
+    <a href="{{ url_for('report', report_type='lost') }}" class="module-card lost">
+      <span class="icon">🔴</span>
+      <span class="label">Report Lost</span>
+    </a>
+    <a href="{{ url_for('report', report_type='found') }}" class="module-card found">
+      <span class="icon">🟢</span>
+      <span class="label">Report Found</span>
+    </a>
+    <a href="{{ url_for('track_status') }}" class="module-card track">
+      <span class="icon">🔍</span>
+      <span class="label">Track Status</span>
+    </a>
+    {% if current_user.is_admin %}
+      <a href="{{ url_for('admin_panel') }}" class="module-card admin">
+        <span class="icon">🛠️</span>
+        <span class="label">Admin Panel</span>
+      </a>
+    {% endif %}
+  </div>
+
+  <h3 class="section-title">My Reports</h3>
+  {% if my_reports %}
+    <div class="board-grid">
+      {% for r in my_reports %}
+        <div class="card">
+          <span class="tag tag-{{ r.report_type }}">{{ r.report_type }}</span>
+          <span class="status-badge status-{{ r.status }}" style="float:right;">{{ r.status.replace('_', ' ') }}</span>
+          <h3>{{ r.item_name }}</h3>
+          <p class="desc">{{ r.description }}</p>
+          <div class="meta">
+            <span class="stop">🚌 {{ r.bus_stop_name }}{% if r.spot %} — {{ r.spot }}{% endif %}</span>
+            <span>{{ r.date_reported.strftime('%d %b %Y, %I:%M %p') }}</span>
+          </div>
+
+          {% set pending_claims = r.claims | selectattr('status', 'equalto', 'pending') | list %}
+          {% if pending_claims %}
+            <div style="margin-top:12px;">
+              <span style="font-size:0.75rem; color:var(--text-dim); font-weight:700;">Pending claims:</span>
+              {% for c in pending_claims %}
+                <div class="claim-row">
+                  <div><strong>{{ c.claimant.username }}</strong> answered: "{{ c.submitted_answer }}"</div>
+                  <div class="claim-actions">
+                    <form method="post" action="{{ url_for('decide_claim', claim_id=c.id, decision='approve') }}">
+                      <button type="submit" class="resolve-btn btn-approve">Approve</button>
+                    </form>
+                    <form method="post" action="{{ url_for('decide_claim', claim_id=c.id, decision='reject') }}">
+                      <button type="submit" class="resolve-btn btn-reject">Reject</button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if r.status != 'resolved' %}
+            <form class="resolve-form" method="post" action="{{ url_for('resolve', report_id=r.id) }}">
+              <button type="submit" class="resolve-btn">✓ Mark as resolved</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--text-dim); font-size:0.85rem;">You haven't posted any reports yet.</p>
+  {% endif %}
+
+  <h3 class="section-title">My Claims</h3>
+  {% if my_claims %}
+    {% for c in my_claims %}
+      <div class="claim-row">
+        <div>
+          Claim on <strong>{{ c.report.item_name }}</strong> ({{ c.report.report_type }}) —
+          <span class="status-badge status-{{ 'resolved' if c.status == 'approved' else ('open' if c.status == 'pending' else 'claim_pending') }}">{{ c.status }}</span>
+        </div>
+        {% if c.status == 'approved' %}
+          <div class="contact-reveal">✓ Verified — Contact: {{ c.report.contact_info }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p style="color:var(--text-dim); font-size:0.85rem;">You haven't made any claims yet.</p>
+  {% endif %}
+{% endblock %}

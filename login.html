@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log In — FOUND_{% endblock %}
+{% block content %}
+  <div class="auth-card">
+    <h2>Log In</h2>
+    <form method="post">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <div class="submit-row" style="justify-content:center;">
+        <button type="submit" class="btn btn-yellow" style="width:100%;">Log In</button>
+      </div>
+    </form>
+    <div class="switch-link">Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin:18px 0;">
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+      <span style="font-size:0.72rem; color:var(--text-dim);">OR</span>
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+    </div>
+
+    <a href="{{ url_for('guest_login') }}" class="btn btn-ghost" style="width:100%; text-align:center; box-sizing:border-box;">Continue as Guest</a>
+    <div class="switch-link" style="opacity:0.7;">Guests can report, browse, and claim items — no signup needed.</div>
+
+    <div class="switch-link" style="opacity:0.6; margin-top:14px;">Admin demo login: admin / admin123</div>
+  </div>
+{% endblock %}

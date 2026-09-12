@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Report {{ report_type|capitalize }} Item — FOUND_{% endblock %}
+{% block content %}
+  <div class="form-card">
+    <span class="type-badge" style="background: {{ 'rgba(255,92,92,0.15)' if report_type == 'lost' else 'rgba(74,222,128,0.15)' }}; color: {{ 'var(--red)' if report_type == 'lost' else 'var(--green)' }};">
+      {{ report_type }} item
+    </span>
+    <h2>Report a {{ report_type }} item</h2>
+
+    <form method="post">
+      <div class="field">
+        <label for="item_name">Item name *</label>
+        <input type="text" id="item_name" name="item_name" placeholder="e.g. Blue backpack, wallet, umbrella" value="{{ form.item_name or '' }}" required>
+      </div>
+
+      <div class="field">
+        <label for="description">Description *</label>
+        <textarea id="description" name="description" placeholder="Color, brand, any identifying details, when it happened..." required>{{ form.description or '' }}</textarea>
+      </div>
+
+      <div class="field">
+        <label for="bus_stop_name">Bus stop name *</label>
+        <input type="text" id="bus_stop_name" name="bus_stop_name" placeholder="e.g. CBS Depot, Nashik Road Stand" value="{{ form.bus_stop_name or '' }}" required>
+        <span class="hint">Name of the bus stop where it was lost/found</span>
+      </div>
+
+      <div class="field">
+        <label for="spot">Specific spot (optional)</label>
+        <input type="text" id="spot" name="spot" placeholder="e.g. near platform 3, ticket counter, bench by gate" value="{{ form.spot or '' }}">
+      </div>
+
+      <div class="field">
+        <label for="contact_info">Contact info *</label>
+        <input type="text" id="contact_info" name="contact_info" placeholder="Phone number or email" value="{{ form.contact_info or '' }}" required>
+        <span class="hint">Only shared with a claimant once their claim is verified/approved</span>
+      </div>
+
+      {% if report_type == 'found' %}
+        <div class="field">
+          <label for="verification_question">Verification question *</label>
+          <input type="text" id="verification_question" name="verification_question" placeholder="e.g. What color is the zipper pull?" value="{{ form.verification_question or '' }}" required>
+          <span class="hint">Something only the real owner would know — used to confirm claims</span>
+        </div>
+        <div class="field">
+          <label for="verification_answer">Correct answer *</label>
+          <input type="text" id="verification_answer" name="verification_answer" placeholder="e.g. Red" value="{{ form.verification_answer or '' }}" required>
+          <span class="hint">Kept private — only used to auto-check claimant answers</span>
+        </div>
+      {% endif %}
+
+      <div class="submit-row">
+        <button type="submit" class="btn {{ 'btn-lost' if report_type == 'lost' else 'btn-found' }}">Post {{ report_type }} report</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

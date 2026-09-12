@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FOUND_ — Bus Stops{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="board">
+    <div class="wrap topbar">
+      <a href="{{ url_for('dashboard') if current_user else url_for('login') }}" style="text-decoration:none;">
+        <div class="brand"><span class="pin">📌</span> FOUND_ <span style="color:var(--text-dim); font-weight:400; font-size:0.9rem;">/ bus stops</span></div>
+      </a>
+      {% if current_user %}
+        <div class="user-chip">
+          {% if current_user.is_guest %}
+            Browsing as <strong>Guest</strong>
+            <a href="{{ url_for('signup') }}" class="btn btn-ghost" style="padding:6px 14px;">Sign up to save access</a>
+          {% else %}
+            Logged in as <strong>{{ current_user.username }}</strong>{% if current_user.is_admin %} <span style="color:#7c8cff;">(admin)</span>{% endif %}
+          {% endif %}
+          <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding:6px 14px;">Log out</a>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="wrap">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" style="display:block;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer>Lost something at a bus stop? Found something? Report it, track it, get it back.</footer>
+</body>
+</html>

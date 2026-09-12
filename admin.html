@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — FOUND_{% endblock %}
+{% block content %}
+  <h2 style="margin-bottom:4px;">Admin Panel</h2>
+  <p style="color:var(--text-dim); font-size:0.85rem; margin-top:0;">Maintain records and oversee reports.</p>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="num">{{ stats.total_reports }}</div><div class="label">Total Reports</div></div>
+    <div class="stat-card"><div class="num">{{ stats.open_reports }}</div><div class="label">Open</div></div>
+    <div class="stat-card"><div class="num">{{ stats.resolved_reports }}</div><div class="label">Resolved</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_claims }}</div><div class="label">Pending Claims</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_users }}</div><div class="label">Users</div></div>
+  </div>
+
+  <h3 class="section-title">All Reports</h3>
+  <table class="admin-table">
+    <tr><th>Item</th><th>Type</th><th>Bus Stop</th><th>Reporter</th><th>Status</th><th>Date</th><th></th></tr>
+    {% for r in reports %}
+      <tr>
+        <td>{{ r.item_name }}</td>
+        <td><span class="tag tag-{{ r.report_type }}">{{ r.report_type }}</span></td>
+        <td>{{ r.bus_stop_name }}</td>
+        <td>{{ r.reporter.username }}</td>
+        <td><span class="status-badge status-{{ r.status }}">{{ r.status.replace('_', ' ') }}</span></td>
+        <td>{{ r.date_reported.strftime('%d %b %Y') }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin_delete_report', report_id=r.id) }}" onsubmit="return confirm('Delete this report?');">
+            <button type="submit" class="del-btn">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h3 class="section-title">All Claims</h3>
+  <table class="admin-table">
+    <tr><th>Item</th><th>Claimant</th><th>Answer</th><th>Status</th><th>Date</th></tr>
+    {% for c in claims %}
+      <tr>
+        <td>{{ c.report.item_name }}</td>
+        <td>{{ c.claimant.username }}</td>
+        <td>{{ c.submitted_answer }}</td>
+        <td><span class="status-badge status-{{ 'resolved' if c.status == 'approved' else ('open' if c.status == 'pending' else 'claim_pending') }}">{{ c.status }}</span></td>
+        <td>{{ c.date_submitted.strftime('%d %b %Y') }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h3 class="section-title">Users</h3>
+  <table class="admin-table">
+    <tr><th>Username</th><th>Role</th><th>Joined</th></tr>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ 'Admin' if u.is_admin else 'User' }}</td>
+        <td>{{ u.date_joined.strftime('%d %b %Y') }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}
