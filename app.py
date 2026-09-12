@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 INSTANCE_DIR = os.path.join(BASE_DIR, "instance")
 
-# Ensure the instance folder exists before initializing SQLite
+# CREATE THE FOLDER IF IT DOESN'T EXIST
 os.makedirs(INSTANCE_DIR, exist_ok=True)
 
 app = Flask(__name__)
@@ -18,7 +18,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(INSTANCE_DIR, 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
-
 
 # ---------------- Models ----------------
 
