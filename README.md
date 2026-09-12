@@ -1,5 +1,3 @@
-# FOUND_
-CEP project
 # FOUND_ (v2: Login, Track Status, Admin Panel)
 
 Flask + SQLite web app for reporting and recovering lost/found items at bus stops, now with
