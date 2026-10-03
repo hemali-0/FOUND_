@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FOUND_</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <div class="header-in">
+      <div class="logo">&#128204; FOUND_</div>
+      <nav id="nav" hidden>
+        <button data-view="dash">Dashboard</button>
+        <button data-view="track">Track Status</button>
+        <button data-view="admin" id="nav-admin" hidden>Admin</button>
+        <button id="logout">Logout</button>
+        <button data-view="lost" class="btn-lost">+ Report Lost</button>
+        <button data-view="found" class="btn-found">+ Report Found</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Login / Signup -->
+    <section id="v-auth" class="view card narrow">
+      <h2>Welcome</h2>
+      <p class="muted">Lost something at a bus stop? Found something? Start here.</p>
+      <label>Username<input id="a-user" autocomplete="username"></label>
+      <label>Password<input id="a-pass" type="password" autocomplete="current-password"></label>
+      <div class="row">
+        <button id="btn-login" class="primary">Login</button>
+        <button id="btn-signup">Sign up</button>
+      </div>
+      <button id="btn-guest" class="ghost full">Continue as Guest</button>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="v-dash" class="view" hidden>
+      <div class="stats" id="stats"></div>
+      <div class="features">
+        <span>Lost Item Reporting</span><span>Found Item Reporting</span><span>Central Registry</span>
+        <span>Search &amp; Filters</span><span>Smart Matching</span><span>Claim Verification</span>
+        <span>Status Tracking</span><span>Admin Dashboard</span>
+      </div>
+      <div class="filters">
+        <input id="f-q" placeholder="Search item, stop, description...">
+        <div class="pills">
+        <button class="pill active" data-kind="">All</button>
+        <button class="pill" data-kind="lost">Lost</button>
+        <button class="pill" data-kind="found">Found</button>
+        <select id="f-status"><option value="">Any status</option><option value="open">Open</option><option value="claimed">Claimed</option><option value="returned">Resolved</option></select>
+      </div>
+      </div>
+      <div id="list" class="grid"></div>
+    </section>
+
+    <!-- Report Lost / Found (shared form) -->
+    <section id="v-report" class="view card narrow" hidden>
+      <h2 id="r-title"></h2>
+      <label>Item name<input id="r-name" placeholder="e.g. Black backpack"></label>
+      <label>Category
+        <select id="r-category">
+          <option>Bag</option><option>Phone / Electronics</option><option>Wallet / Cards</option>
+          <option>Keys</option><option>Clothing</option><option>Documents</option><option>Other</option>
+        </select>
+      </label>
+      <label>Bus stop name<input id="r-stop" placeholder="e.g. Andheri East"></label>
+      <label>Spot at the stop (optional)<input id="r-spot" placeholder="e.g. near the shelter bench"></label>
+      <label>Date<input id="r-date" type="date"></label>
+      <label>Description<textarea id="r-desc" rows="3" placeholder="Colour, brand, marks..."></textarea></label>
+      <label>Your contact (phone / email)<input id="r-contact"></label>
+      <div id="r-verify">
+        <label>Verification question<input id="r-vq" placeholder="Something only the real owner would know"></label>
+        <label>Answer<input id="r-va"></label>
+      </div>
+      <button id="r-submit" class="primary full">Submit report</button>
+    </section>
+
+    <!-- Track Status -->
+    <section id="v-track" class="view" hidden>
+      <h2>Your reports</h2>
+      <div id="my-list" class="grid"></div>
+    </section>
+
+    <!-- Admin -->
+    <section id="v-admin" class="view" hidden>
+      <h2>Admin panel</h2>
+      <div class="stats" id="admin-stats"></div>
+      <div id="admin-list" class="grid"></div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
