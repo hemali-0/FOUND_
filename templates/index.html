@@ -76,6 +76,19 @@
         <label>Verification question<input id="r-vq" placeholder="Something only the real owner would know"></label>
         <label>Answer<input id="r-va"></label>
       </div>
+      <div class="photo">
+        <span>Photo (optional)</span>
+        <span id="photo-hint"></span>
+        <div class="row">
+          <button type="button" id="btn-upload">Upload photo</button>
+          <button type="button" id="btn-cam">Take photo</button>
+        </div>
+        <input type="file" id="r-file" accept="image/*" hidden>
+        <div id="photo-prev" hidden>
+          <img id="r-prev" alt="preview">
+          <button type="button" id="photo-rm" class="ghost">Remove</button>
+        </div>
+      </div>
       <button id="r-submit" class="primary full">Submit report</button>
     </section>
 
@@ -92,6 +105,14 @@
       <div id="admin-list" class="grid"></div>
     </section>
   </main>
+
+  <div id="cam" class="cam" hidden>
+    <video id="cam-v" autoplay playsinline muted></video>
+    <div>
+      <button id="cam-snap" class="primary">Capture</button>
+      <button id="cam-close">Cancel</button>
+    </div>
+  </div>
 
   <div id="toast"></div>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
