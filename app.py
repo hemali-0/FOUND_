@@ -1,11 +1,14 @@
-import os, re, secrets, sqlite3
+import base64, os, re, secrets, sqlite3, uuid
 from functools import wraps
 from flask import Flask, request, jsonify, session, render_template, g
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret")
-DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "found.db")
+app.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024  # reject request bodies over 4 MB
+BASE = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE, "found.db")
+UPLOAD_DIR = os.path.join(BASE, "static", "uploads")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users(
@@ -15,13 +18,17 @@ CREATE TABLE IF NOT EXISTS items(
   id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, name TEXT NOT NULL,
   category TEXT, stop TEXT NOT NULL, spot TEXT, description TEXT, date TEXT,
   contact TEXT, vq TEXT, va TEXT, status TEXT DEFAULT 'open',
-  user_id INTEGER, claimed_by INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP);
+  user_id INTEGER, claimed_by INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, image TEXT);
 """
 
 
 def init_db():
     c = sqlite3.connect(DB)
     c.executescript(SCHEMA)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    # add the image column to databases created before photos existed
+    if "image" not in [r[1] for r in c.execute("PRAGMA table_info(items)")]:
+        c.execute("ALTER TABLE items ADD COLUMN image TEXT")
     if not c.execute("SELECT 1 FROM users WHERE is_admin=1").fetchone():
         c.execute("INSERT INTO users(username,password,is_admin) VALUES(?,?,1)",
                   ("admin", generate_password_hash(os.environ.get("ADMIN_PASSWORD", "admin123"))))
@@ -73,6 +80,28 @@ def admin_required(f):
     return w
 
 
+def save_image(data):
+    """Save a JPEG data-URL sent by the browser; return the stored file name."""
+    if not data:
+        return None
+    m = re.fullmatch(r"data:image/jpeg;base64,([A-Za-z0-9+/=]+)", data)
+    if not m:
+        raise ValueError("Photo must be a JPEG image")
+    raw = base64.b64decode(m.group(1))
+    if len(raw) > 2 * 1024 * 1024 or raw[:2] != b"\xff\xd8":
+        raise ValueError("Invalid or too large photo")
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    name = uuid.uuid4().hex + ".jpg"
+    with open(os.path.join(UPLOAD_DIR, name), "wb") as f:
+        f.write(raw)
+    return name
+
+
+@app.errorhandler(413)
+def too_big(_):
+    return err("Photo is too large", 413)
+
+
 def user_json(u):
     return dict(id=u["id"], username=u["username"], is_admin=bool(u["is_admin"]), is_guest=bool(u["is_guest"]))
 
@@ -83,6 +112,7 @@ def item_json(r, u):
     d = {k: r[k] for k in ("id", "kind", "name", "category", "stop", "spot",
                            "description", "date", "status", "created")}
     d["mine"] = mine
+    d["image"] = "/static/uploads/" + r["image"] if r["image"] else None
     if r["kind"] == "found":
         d["vq"] = r["vq"]
     if mine or admin or (u and r["claimed_by"] == u["id"]):
@@ -179,11 +209,15 @@ def create_item():
         return err("Set a verification question and its answer")
     if kind == "lost":
         f["vq"] = f["va"] = ""
+    try:
+        image = save_image(d.get("image"))
+    except ValueError as e:
+        return err(str(e))
     cur = db().execute(
-        "INSERT INTO items(kind,name,category,stop,spot,description,date,contact,vq,va,user_id) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO items(kind,name,category,stop,spot,description,date,contact,vq,va,user_id,image) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
         (kind, f["name"], f["category"], f["stop"], f["spot"], f["description"], f["date"],
-         f["contact"], f["vq"], f["va"], u["id"]))
+         f["contact"], f["vq"], f["va"], u["id"], image))
     db().commit()
     return jsonify(id=cur.lastrowid)
 
@@ -236,6 +270,11 @@ def delete_item(iid):
         return err("Not allowed", 403)
     db().execute("DELETE FROM items WHERE id=?", (iid,))
     db().commit()
+    if r["image"]:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, r["image"]))
+        except OSError:
+            pass
     return jsonify(ok=True)
 
 
