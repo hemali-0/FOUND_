@@ -1,5 +1,5 @@
 const $ = s => document.querySelector(s);
-let me = null, reportKind = 'lost', kindFilter = '';
+let me = null, reportKind = 'lost', kindFilter = '', photoData = null, camStream = null;
 
 /* ---------- helpers ---------- */
 async function api(url, method = 'GET', body) {
@@ -59,8 +59,9 @@ function card(i, mode = 'browse') {
   const contact = i.contact
     ? `<div class="contact">Contact: ${esc(i.contact)}</div>`
     : (i.kind === 'found' ? '<div class="locked">&#128274; Contact shown after claim is verified</div>' : '');
+  const pic = i.image ? `<img class="pic" src="${esc(i.image)}" alt="${esc(i.name)}" loading="lazy">` : '';
   return `<div class="item ${i.kind}" id="item-${i.id}">
-    <div class="top"><span class="tag ${i.kind}">${i.kind}</span><span class="status">${i.status === 'returned' ? 'resolved' : i.status}</span></div>
+    ${pic}<div class="top"><span class="tag ${i.kind}">${i.kind}</span><span class="status">${i.status === 'returned' ? 'resolved' : i.status}</span></div>
     <h3>${esc(i.name)}</h3>
     <p class="desc">${esc(i.description || i.category || '')}</p>
     <div class="meta">
@@ -93,9 +94,58 @@ document.querySelectorAll('.pill').forEach(p => (p.onclick = run(async () => {
   await loadDash();
 })));
 
+/* ---------- photo: upload (lost / admin) or live camera (found / admin) ---------- */
+function setPhoto(data) {
+  photoData = data;
+  $('#r-prev').src = data || '';
+  $('#photo-prev').hidden = !data;
+}
+// shrink to max 800px JPEG so photos stay small and fast
+function shrink(src) {
+  const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+  if (!sw || !sh) throw new Error('Could not read the image');
+  const k = Math.min(1, 800 / Math.max(sw, sh));
+  const c = document.createElement('canvas');
+  c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.75);
+}
+$('#btn-upload').onclick = () => $('#r-file').click();
+$('#r-file').onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => { try { setPhoto(shrink(img)); } catch (er) { toast(er.message, true); } URL.revokeObjectURL(img.src); };
+  img.onerror = () => toast('Could not read that image', true);
+  img.src = URL.createObjectURL(f);
+  e.target.value = '';
+};
+$('#btn-cam').onclick = run(async () => {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera not available here (needs https or localhost).');
+  try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); }
+  catch { throw new Error('Camera blocked or not found. Allow camera access and try again.'); }
+  $('#cam-v').srcObject = camStream;
+  $('#cam').hidden = false;
+});
+function closeCam() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  $('#cam').hidden = true;
+}
+$('#cam-snap').onclick = run(async () => { setPhoto(shrink($('#cam-v'))); closeCam(); });
+$('#cam-close').onclick = closeCam;
+$('#photo-rm').onclick = () => setPhoto(null);
+
 /* ---------- report ---------- */
 function openReport(kind) {
   reportKind = kind;
+  setPhoto(null);
+  const adm = me && me.is_admin;               // admin can use both options
+  $('#btn-upload').hidden = !(kind === 'lost' || adm);
+  $('#btn-cam').hidden = !(kind === 'found' || adm);
+  $('#photo-hint').textContent = kind === 'lost'
+    ? 'Upload a photo of the item you lost'
+    : 'Take a live photo of the item you found';
   $('#r-title').textContent = kind === 'lost' ? 'Report a lost item' : 'Report a found item';
   $('#r-verify').hidden = kind === 'lost';
   $('#r-date').value = new Date().toISOString().slice(0, 10);
@@ -105,9 +155,10 @@ $('#r-submit').onclick = run(async () => {
     kind: reportKind, name: $('#r-name').value, category: $('#r-category').value,
     stop: $('#r-stop').value, spot: $('#r-spot').value, date: $('#r-date').value,
     description: $('#r-desc').value, contact: $('#r-contact').value,
-    vq: $('#r-vq').value, va: $('#r-va').value
+    vq: $('#r-vq').value, va: $('#r-va').value, image: photoData
   });
   ['name', 'stop', 'spot', 'desc', 'contact', 'vq', 'va'].forEach(k => ($('#r-' + k).value = ''));
+  setPhoto(null);
   toast('Report posted!');
   show('dash');
 });
