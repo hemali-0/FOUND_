@@ -193,6 +193,12 @@ def favicon():
     return send_from_directory(os.path.join(BASE, "static"), "favicon.ico", mimetype="image/x-icon")
 
 
+@app.route("/.well-known/assetlinks.json")
+def assetlinks():
+    # needed so the Android app (made with PWABuilder) can open full screen without a browser bar
+    return send_from_directory(os.path.join(BASE, ".well-known"), "assetlinks.json", mimetype="application/json")
+
+
 @app.route("/sw.js")
 def service_worker():
     # served from the site root so it can control the whole app
@@ -270,6 +276,12 @@ def list_items():
     rows = db().execute(sql + " ORDER BY id DESC LIMIT ?", args + [limit]).fetchall()
     u = user()
     return jsonify([item_json(r, u) for r in rows])
+
+
+@app.get("/api/health")
+def health():
+    # open /api/health on your site to see which database is being used
+    return jsonify(database="postgres (permanent)" if PG else "sqlite (temporary on Render)")
 
 
 @app.get("/api/summary")
