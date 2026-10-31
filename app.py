@@ -20,13 +20,20 @@ SQLITE_FILE = os.path.join(BASE, "found.db")
 # Storage: if DATABASE_URL is set (Postgres, e.g. Neon) data is permanent.
 # Otherwise a local SQLite file is used (great for running on your laptop).
 # ---------------------------------------------------------------------------
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
-PG = DATABASE_URL.startswith("postgres")
+_raw = os.environ.get("DATABASE_URL", "").strip()
+# Neon shows "psql 'postgresql://...'" - accept that if it was pasted whole
+DATABASE_URL = re.sub(r"^psql\s+", "", _raw).strip().strip("'\"")
+PG, DB_PROBLEM = DATABASE_URL.startswith("postgres"), ""
+if _raw and not PG:
+    DB_PROBLEM = "DATABASE_URL is set but does not start with postgresql://"
 if PG:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-    from psycopg2.pool import ThreadedConnectionPool
-    POOL = ThreadedConnectionPool(1, 5, DATABASE_URL)
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        from psycopg2.pool import ThreadedConnectionPool
+        POOL = ThreadedConnectionPool(1, 5, DATABASE_URL)  # connects right away
+    except Exception as e:  # keep the site alive and report the reason on /api/health
+        PG, DB_PROBLEM = False, f"{type(e).__name__}: {str(e).strip().splitlines()[0][:200]}"
 INTEGRITY = (sqlite3.IntegrityError,) + ((psycopg2.IntegrityError,) if PG else ())
 LIKE = "ILIKE" if PG else "LIKE"
 
@@ -281,7 +288,13 @@ def list_items():
 @app.get("/api/health")
 def health():
     # open /api/health on your site to see which database is being used
-    return jsonify(database="postgres (permanent)" if PG else "sqlite (temporary on Render)")
+    info = {"database": "postgres (permanent)" if PG else "sqlite (temporary on Render)",
+            "problem": DB_PROBLEM or None}
+    try:
+        info["reports_stored"] = db().execute("SELECT COUNT(*) AS n FROM items").fetchone()["n"]
+    except Exception as e:
+        info["query_error"] = str(e).strip().splitlines()[0][:200]
+    return jsonify(info)
 
 
 @app.get("/api/summary")
